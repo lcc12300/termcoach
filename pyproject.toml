@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "termcoach"
+version = "0.3.0"
+description = "Select-to-record terminal sessions for AI-assisted review: record only the segments you choose, preview before saving, plain-text transcripts."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "cc" }]
+keywords = ["terminal", "shell", "recorder", "vim", "learning", "pty", "ai", "readline"]
+classifiers = [
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Topic :: Education",
+    "Topic :: Terminals",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/lcc12300/termcoach"
+Source = "https://github.com/lcc12300/termcoach"
+Issues = "https://github.com/lcc12300/termcoach/issues"
+"中文说明" = "https://github.com/lcc12300/termcoach/blob/main/README.zh-CN.md"
+
+[project.scripts]
+termcoach = "termcoach.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["termcoach*"]

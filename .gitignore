@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# Test / tool caches
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local artifacts — never commit recordings, keys or findings
+*.local
+.env
+config.toml
+key
+*.jsonl
+practice_*/
+transcript_*.md
+draft_*.md
+
+# 本地设计文档与工作记录，不公开
+docs/
+
+# 一次性本地脚本
+probes/_*.sh
+probes/_*.py

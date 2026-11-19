@@ -1,0 +1,37 @@
+#!/bin/sh
+# 推送前自检：把本机路径、端口、凭据、录制文件挡在仓库外。
+# 启用：git config core.hooksPath .githooks
+# 跳过（确实要推时）：git push --no-verify
+set -e
+fail=0
+
+check() {
+    desc="$1"; pattern="$2"
+    hits=$(git grep -n -I -E "$pattern" -- . ':(exclude).githooks' || true)
+    if [ -n "$hits" ]; then
+        echo "[pre-push] 疑似$desc：" >&2
+        echo "$hits" | head -10 >&2
+        fail=1
+    fi
+}
+
+check "本机绝对路径" "/mnt/c/Users/|C:/Users/|/home/[a-z]+/[a-z_]+_(notes|proj)"
+check "内网/本地服务地址" "127\.0\.0\.1:[0-9]{4}|192\.168\.[0-9]+\.[0-9]+|10\.[0-9]+\.[0-9]+\.[0-9]+"
+check "凭据字面量" "sk-[A-Za-z0-9]{16,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}"
+check "私钥" "BEGIN (RSA |OPENSSH |EC )?PRIVATE KEY"
+check "邮箱" "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.(com|cn|org)"
+
+for f in $(git ls-files); do
+    case "$f" in
+        *.jsonl|*/key|*.pem|transcript_*.md|draft_*.md|docs/*)
+            echo "[pre-push] 不该入库的文件：$f" >&2
+            fail=1
+            ;;
+    esac
+done
+
+if [ "$fail" -ne 0 ]; then
+    echo "[pre-push] 已阻止推送。确认要推就 git push --no-verify" >&2
+    exit 1
+fi
+exit 0
