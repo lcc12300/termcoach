@@ -117,10 +117,12 @@ recording already on, and after `exit` exports the session as
 `practice_<timestamp>.md`. It then offers to review that practice immediately,
 using the same review path (with practice offering disabled for that round).
 
-Exercises are text only — nothing is executed for you — and any suggestion
-containing an obviously destructive command (`sudo`, `ssh`, `rm -rf`, `curl`,
-`mkfs`, `dd`, …) is dropped with a message. Treat that filter as a sanity check,
-not a security boundary: you are typing into your own shell.
+Exercises are text only — nothing is executed for you — and a suggestion that
+contains an obviously destructive command (`sudo`, `ssh`, `rm -rf`, `curl`,
+`mkfs /dev/…`, `dd if=/dev/…`, …) is dropped with a message. The check looks for
+dangerous *arguments*, not bare words, so Vim's `dd` (delete line) is fine. Treat
+it as a sanity check anyway, not a security boundary: you are typing into your own
+shell.
 
 ## Track findings locally
 

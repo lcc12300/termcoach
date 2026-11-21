@@ -21,10 +21,15 @@ FIXTURE = {
 }
 
 # 粗筛：命中的练习直接不提供。shortcut: 词面匹配，绕过方式很多，不当安全边界。
+# 判据是「命令 + 危险参数」，不是单词本身——`dd` 在 Vim 普通模式是删行，
+# 只有 `dd if=/dev/... of=/dev/...` 这种带设备参数的才算危险命令。
 _DANGER = re.compile(
-    r"\b(sudo|su\s|ssh\s|scp\s|rsync\s|mkfs|dd\s|shutdown|reboot|init\s0|"
-    r"apt(-get)?\s+install|pip\s+install|curl\s|wget\s|nc\s|ncat\s|"
-    r"chown\s|chmod\s+777|rm\s+-[rf]|>\s*/dev/|:\s*\(\)\s*\{)",
+    r"\b(sudo|su\s|ssh\s|scp\s|rsync\s|shutdown|reboot|init\s+0|"
+    r"apt(-get)?\s+install|pip\s+install|curl\s|wget\s|ncat\s|"
+    r"chown\s|chmod\s+777|rm\s+-[rf]|>\s*/dev/|:\s*\(\s*\)\s*\{)"
+    r"|(?<![\w/])dd\s+(?:if=|of=|bs=|count=)"
+    r"|\bmkfs(?:\.\w+)?\s+/dev/"
+    r"|\bnc\s+-",
     re.I,
 )
 
@@ -76,15 +81,21 @@ def render_brief(practice: dict, finding_title: str = "", workspace: str = "") -
     return "\n".join(lines)
 
 
-def start(practice: dict, finding_title: str = "") -> str:
-    """跑一遍练习并导出 transcript；返回路径（没录到东西返回空串）。"""
+def start(practice: dict, finding_title: str = ""):
+    """跑一遍练习并导出 transcript。
+
+    返回导出路径；被安全粗筛拦下返回 None；开始了但没录到东西返回 ""。
+    """
     from . import style
+    on = style.enabled()
     guard = looks_dangerous(practice.get("task", ""), practice.get("done_when", ""),
                             *(practice.get("steps") or []))
     if guard:
-        print(style.warn(f"[termcoach] 这条练习含危险命令（{guard}），已跳过。",
-                         style.enabled()))
-        return ""
+        print(style.warn(f"[termcoach] 练习里有像危险命令的片段（{guard}），没有开始。",
+                         on))
+        print(style.dim("  这是词面粗筛，会误伤（比如 Vim 的 dd 删行本身安全）。"
+                        "想照做就自己手动执行，工具不代劳。", on))
+        return None
     stamp = time.strftime("%Y%m%d_%H%M%S")
     workspace = os.path.expanduser(f"~/.cache/termcoach/practice/practice_{stamp}")
     provision(workspace)

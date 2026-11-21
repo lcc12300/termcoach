@@ -535,6 +535,8 @@ def _offer_practice(data: dict, offer_practice: bool):
         return
     from .practice import start
     path = start(practice, target)
+    if path is None:          # 被安全粗筛拦下，start 已经说明原因
+        return
     if not path:
         print(style.dim("这次没有导出练习记录。", on))
         return

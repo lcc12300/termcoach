@@ -69,6 +69,21 @@ class TestDangerFilter(unittest.TestCase):
                      "rmdir 空目录不需要 -r", "改 report_new.txt 的第一行"):
             self.assertEqual(practice.looks_dangerous(text), "", text)
 
+    def test_vim_normal_mode_vocabulary_is_not_dangerous(self):
+        # 实测误报：模型给的 Vim 练习写了 x/dw/dd，被当成 dd 写盘工具拦掉
+        vim_steps = [
+            "写到一半不要用退格删字，改用 Esc + x/dw/dd 在普通模式删，定位用 gg/G 和 / 搜索跳转",
+            "dd 删掉写错的那一行，按 u 撤销整段插入",
+            "用 cc 重写整行，按 :wq 保存",
+        ]
+        for s in vim_steps:
+            self.assertEqual(practice.looks_dangerous(s), "", s)
+
+    def test_dd_with_device_args_still_caught(self):
+        for text in ("dd if=/dev/zero of=/dev/sda", "dd bs=1M count=10 of=/dev/sdb",
+                     "mkfs.ext4 /dev/sda1"):
+            self.assertTrue(practice.looks_dangerous(text), text)
+
 
 class TestWorkspace(unittest.TestCase):
     def test_provision_creates_fixture(self):
@@ -101,7 +116,7 @@ class TestStart(unittest.TestCase):
     def test_dangerous_practice_never_starts(self):
         bad = dict(GOOD, task="先 sudo rm -rf /tmp/x 再看结果")
         with mock.patch.object(practice, "run_session") as rs:
-            self.assertEqual(practice.start(bad), "")
+            self.assertIsNone(practice.start(bad))      # None = 被安全粗筛拦下
             rs.assert_not_called()
 
     def test_start_provisions_and_exports(self):
@@ -139,6 +154,17 @@ class TestOfferFlow(unittest.TestCase):
         s.assert_called_once()
         self.assertEqual(cr.call_args.args[0], ["/tmp/p.md"])
         self.assertFalse(cr.call_args.kwargs.get("offer_practice"))
+
+    def test_blocked_practice_prints_no_export_line(self):
+        # 被粗筛拦下时只该说一次原因，不能再补一句「没有导出记录」
+        with mock.patch.object(practice, "start", return_value=None), \
+             mock.patch.object(llm, "cmd_review") as cr, \
+             mock.patch("builtins.input", return_value="y"), \
+             mock.patch("builtins.print") as mp:
+            llm._offer_practice(self.data, True)
+        out = " ".join(str(a) for c in mp.call_args_list for a in c.args)
+        self.assertNotIn("没有导出", out)
+        cr.assert_not_called()
 
     def test_no_practice_in_review(self):
         with mock.patch.object(practice, "start") as s:
